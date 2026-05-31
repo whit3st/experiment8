@@ -1,0 +1,48 @@
+{
+  "columns": [
+    {
+      "id": "todo",
+      "title": "To Do"
+    },
+    {
+      "id": "inprogress",
+      "title": "In Progress"
+    },
+    {
+      "id": "done",
+      "title": "Done"
+    }
+  ],
+  "cards": [
+    {
+      "id": "1",
+      "title": "Design database schema",
+      "columnId": "todo",
+      "order": 0
+    },
+    {
+      "id": "2",
+      "title": "Set up CI pipeline",
+      "columnId": "done",
+      "order": 0
+    },
+    {
+      "id": "3",
+      "title": "Write unit tests2222",
+      "columnId": "todo",
+      "order": 1
+    },
+    {
+      "id": "4",
+      "title": "Deploy to staging",
+      "columnId": "done",
+      "order": 1
+    },
+    {
+      "id": "1780249925700",
+      "title": "test 123",
+      "columnId": "inprogress",
+      "order": 0
+    }
+  ]
+}
