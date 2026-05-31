@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>test-1</title>
+</head>
+<body>
+<todo-app></todo-app>
+
+<script type="module">
+import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+
+// --- Bus ---
+const appBus = new EventTarget();
+
+// --- Ports ---
+class AddTodoCmd extends CustomEvent {
+  static TYPE = 'port:in:todo:add';
+  constructor(payload) {
+    if (!payload || typeof payload.text !== 'string') {
+      throw new TypeError('AddTodoCmd needs { text: string }');
+    }
+    super(AddTodoCmd.TYPE, { detail: payload });
+  }
+}
+
+class TodosUpdated extends CustomEvent {
+  static TYPE = 'port:out:todo:updated';
+  constructor(payload) {
+    if (!payload || !Array.isArray(payload.todos)) {
+      throw new TypeError('TodosUpdated needs { todos: Array }');
+    }
+    super(TodosUpdated.TYPE, { detail: payload });
+  }
+}
+
+class RemoveTodoCmd extends CustomEvent {
+  static TYPE = 'port:in:todo:remove';
+  constructor(payload) {
+    if (!payload || typeof payload.index !== 'number') {
+      throw new TypeError('RemoveTodoCmd needs { index: number }');
+    }
+    super(RemoveTodoCmd.TYPE, { detail: payload });
+  }
+}
+
+// --- Core ---
+class TodoDomain {
+  state = { todos: [] };
+
+  add(text) {
+    const t = text.trim();
+    if (!t) return this.state;
+    this.state = { todos: [...this.state.todos, t] };
+    return this.state;
+  }
+
+  remove(index) {
+    this.state = { todos: this.state.todos.filter((_, i) => i !== index) };
+    return this.state;
+  }
+}
+
+// --- Bus Adapter ---
+function startAdapter(bus) {
+  const domain = new TodoDomain();
+
+  bus.addEventListener(AddTodoCmd.TYPE, (e) => {
+    const nextState = domain.add(e.detail.text);
+    bus.dispatchEvent(new TodosUpdated(nextState));
+  });
+
+  bus.addEventListener(RemoveTodoCmd.TYPE, (e) => {
+    const nextState = domain.remove(e.detail.index);
+    bus.dispatchEvent(new TodosUpdated(nextState));
+  });
+}
+
+// --- UI Adapter ---
+class TodoApp extends LitElement {
+  static properties = {
+    _todos: {},
+    _logs: {}
+  };
+
+  constructor() {
+    super();
+    this._todos = [];
+    this._logs = [];
+    this._onStateChange = (e) => {
+      this._log('TodosUpdated received', e.detail);
+      this._todos = e.detail.todos;
+    };
+  }
+
+  _log(label, data) {
+    const ts = new Date().toLocaleTimeString();
+    const entry = `[${ts}] ${label}: ${JSON.stringify(data)}`;
+    this._logs = [...this._logs.slice(-19), entry];
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    appBus.addEventListener(TodosUpdated.TYPE, this._onStateChange);
+  }
+
+  disconnectedCallback() {
+    appBus.removeEventListener(TodosUpdated.TYPE, this._onStateChange);
+    super.disconnectedCallback();
+  }
+
+  _submit(e) {
+    e.preventDefault();
+    const input = this.renderRoot.querySelector('input');
+    try {
+      const cmd = new AddTodoCmd({ text: input.value });
+      this._log('AddTodoCmd dispatched', cmd.detail);
+      appBus.dispatchEvent(cmd);
+      input.value = '';
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  render() {
+    return html`
+      <form @submit=${this._submit}>
+        <input placeholder="What needs to be done?">
+        <button>Add</button>
+      </form>
+      <ul>
+        ${this._todos.map((t, i) => html`
+          <li>
+            ${t}
+            <button @click=${() => {
+              const cmd = new RemoveTodoCmd({ index: i });
+              this._log('RemoveTodoCmd dispatched', cmd.detail);
+              appBus.dispatchEvent(cmd);
+            }}>Delete</button>
+          </li>
+        `)}
+      </ul>
+      <hr>
+      <pre>${this._logs.join('\n')}</pre>
+    `;
+  }
+}
+
+customElements.define('todo-app', TodoApp);
+
+// --- Wiring ---
+startAdapter(appBus);
+</script>
+</body>
+</html>
