@@ -23,11 +23,12 @@ class ConsumerApp extends LitElement {
   `;
 
   static properties = {
-    logs: { type: Array }
+    logs: { type: Array },
+    count: { type: Number }
   };
 
   logs: string[] = [];
-  private counter = 0;
+  count = 0;
 
   connectedCallback() {
     super.connectedCallback();
@@ -37,13 +38,14 @@ class ConsumerApp extends LitElement {
   }
 
   private handleClick = () => {
-    this.counter++;
-    bus.dispatch(CLICK, { count: this.counter });
+    this.count++;
+    bus.dispatch(CLICK, { count: this.count });
   };
 
   render() {
     return html`
       <h1>typed-bus + Lit consumer</h1>
+      <p>Count: ${this.count}</p>
       <button @click=${this.handleClick}>Click me</button>
       <pre>${this.logs.join('\n')}</pre>
     `;
