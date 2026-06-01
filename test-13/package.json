@@ -1,0 +1,18 @@
+{
+  "name": "test-13",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "lit": "^3.3.3",
+    "typed-bus": "link:../typed-bus",
+    "typed-store": "link:../typed-store"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.15"
+  }
+}
