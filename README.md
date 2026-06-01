@@ -1,36 +1,53 @@
-# typed-bus
+# browser-native app primitives
 
-A lightweight, deterministic, typed pub/sub bus built on native browser APIs. Zero dependencies. Zero runtime overhead beyond a single `as` assertion.
+This repo explores a simple idea: building rich browser apps with native web platform tools instead of a framework runtime.
 
-## Architecture
+Core packages:
 
-This project explores **hexagonal architecture** (ports and adapters) using nothing but the web platform and TypeScript.
+- `typed-bus`: typed in-app messaging built on native `EventTarget`
+- `typed-store`: minimal reducer-based state for browser apps
+- `typed-store-event-source`: minimal event-sourced state for browser apps
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   1-ports   │────▶│   2-bus     │────▶│  3-domain   │
-│  (contract) │     │  (pub/sub)  │     │  (logic)    │
-└─────────────┘     └─────────────┘     └─────────────┘
-       │                                      │
-       └──────────────────────────────────────┘
-                         │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-       ┌─────────────┐       ┌─────────────┐
-       │ 4-adapter   │       │ 5-ui        │
-       │ (wires)     │       │ (renders)   │
-       └─────────────┘       └─────────────┘
-```
+The goal is not to compete with React, Redux, Zustand, or Vue stores. The goal is to make plain HTML, Web Components, and Lit apps easier to structure without leaving the platform.
 
-| Layer | Responsibility |
-|-------|--------------|
-| **Ports** | The contract. What events exist and what they carry. |
-| **Bus** | The transport. Typed `EventTarget` wrapper. |
-| **Domain** | Pure logic. No DOM, no network. |
-| **Adapter** | Bridges domain commands to the bus. |
-| **UI** | Visual shell. Dispatches commands, listens to state. |
+## What This Solves
 
-## Tests
+These packages are for browser apps that need:
+
+- typed message contracts for app-level events
+- shared state without a framework runtime
+- explicit boundaries between UI, domain, and adapters
+- architecture that works in plain HTML, Web Components, or Lit
+
+They are intentionally small. They do not try to be a full frontend framework.
+
+## Packages
+
+### `typed-bus`
+
+- typed event contracts
+- browser-native message transport
+- good for decoupling UI, domain, and adapters
+
+### `typed-store`
+
+- reducer-based current-state store
+- `getState()`, `dispatch()`, `subscribe()`
+- good default when current truth matters more than history
+
+### `typed-store-event-source`
+
+- append-only event log with projected current state
+- `getState()`, `getEvents()`, `append()`, `replay()`, `subscribe()`
+- useful when history itself matters
+
+## Docs
+
+- [Architecture](docs/architecture.md)
+- [Use Cases](docs/use-cases.md)
+- [State Models](docs/state-models.md)
+
+## Repo Map
 
 | Directory | What it demonstrates |
 |-----------|----------------------|
@@ -41,52 +58,120 @@ This project explores **hexagonal architecture** (ports and adapters) using noth
 | `test-5` | Same architecture using Lit |
 | `test-6` | Auth SPA with Vite, cookie-based session, guarded routes |
 | `test-7` | Kanban board with JSON persistence via Vite dev server proxy |
-| `test-8` | `typed-bus` package: `createBus()`, `createPort()` |
+| `typed-bus` | `typed-bus` package: `createBus()`, `createPort()` |
+| `typed-store` | `typed-store` package: `createStore()` |
+| `typed-store-event-source` | Event-sourced store package: `createEventStore()` |
 | `test-9` | Consumer app importing `typed-bus` via `pnpm link` |
+| `test-10` | Plain HTML demo using `typed-bus` and `typed-store` together |
+| `test-11` | Lit + Vite + TypeScript demo using two unrelated components with `typed-bus` and `typed-store` |
+| `test-12` | Lit + Vite + TypeScript demo using `typed-bus` and `typed-store-event-source` with an event log |
 
-## Usage
+## Quick Usage
+
+### `typed-bus`
 
 ```typescript
 import { createBus, createPort } from 'typed-bus';
 
-// 1. Define your contract
 interface MyPorts {
-  'app:login':  { username: string };
-  'app:logout': {};
+  'app:login': { username: string };
 }
 
-// 2. Create the bus
 const bus = createBus<MyPorts>();
-
-// 3. Create type-safe port names
 const port = createPort<MyPorts>();
 const LOGIN = port('app:login');
 
-// 4. Use it
 bus.on(LOGIN, ({ username }) => {
-  console.log(`User ${username} logged in`);
+  console.log(username);
 });
 
 bus.dispatch(LOGIN, { username: 'Alex' });
 ```
 
+### `typed-store`
+
+```typescript
+import { createStore } from 'typed-store';
+
+type CounterAction =
+  | { type: 'counter/increment' }
+  | { type: 'counter/reset' };
+
+const store = createStore(
+  (state: { count: number }, action: CounterAction) => {
+    switch (action.type) {
+      case 'counter/increment':
+        return { count: state.count + 1 };
+      case 'counter/reset':
+        return { count: 0 };
+      default:
+        return state;
+    }
+  },
+  { count: 0 }
+);
+
+store.dispatch({ type: 'counter/increment' });
+```
+
+### `typed-store-event-source`
+
+```typescript
+import { createEventStore } from 'typed-store-event-source';
+
+type CounterEvent =
+  | { type: 'counter/incremented'; amount: number }
+  | { type: 'counter/reset' };
+
+const store = createEventStore(
+  (state: { count: number }, event: CounterEvent) => {
+    switch (event.type) {
+      case 'counter/incremented':
+        return { count: state.count + event.amount };
+      case 'counter/reset':
+        return { count: 0 };
+      default:
+        return state;
+    }
+  },
+  { count: 0 }
+);
+
+store.append({ type: 'counter/incremented', amount: 1 });
+```
+
 ## Development
 
 ```bash
-# Build the library
-cd test-8
+# Build typed-bus
+cd typed-bus
 pnpm install
 pnpm build
 
-# Link to consumer app
-cd ../test-9
+# Build typed-store
+cd ../typed-store
+pnpm install
+pnpm build
+
+# Build typed-store-event-source
+cd ../typed-store-event-source
+pnpm install
+pnpm build
+
+# Run the Lit reducer-store demo
+cd ../test-11
+pnpm install
+pnpm dev
+
+# Run the Lit event-sourced demo
+cd ../test-12
 pnpm install
 pnpm dev
 ```
 
 ## Philosophy
 
-- **Deterministic**: Given a port name and payload, the output is predictable.
-- **Native**: `EventTarget`, `CustomEvent`, `HTMLElement`, ES Modules.
-- **Typed**: Compile-time contracts via TypeScript generics. No runtime validation overhead.
-- **Decoupled**: The domain doesn't know about the DOM. The UI doesn't know about the domain.
+- **Native**: built on browser primitives first
+- **Typed**: compile-time contracts instead of framework conventions
+- **Decoupled**: UI, domain, and adapters should not collapse into one layer
+- **Small**: minimal APIs with clear responsibilities
