@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { createBus, createPort, observePort } from 'typed-bus';
+import { createBus, createPort } from 'typed-bus';
 
 // 1. Define the contract
 interface AppPorts {
@@ -32,8 +32,6 @@ class ConsumerApp extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    observePort(bus, LOG, 'LOG');
-    observePort(bus, CLICK, 'CLICK');
     bus.dispatch(LOG, { message: 'typed-bus + Lit consumer loaded' });
   }
 

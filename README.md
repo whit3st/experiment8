@@ -41,7 +41,7 @@ This project explores **hexagonal architecture** (ports and adapters) using noth
 | `test-5` | Same architecture using Lit |
 | `test-6` | Auth SPA with Vite, cookie-based session, guarded routes |
 | `test-7` | Kanban board with JSON persistence via Vite dev server proxy |
-| `test-8` | `typed-bus` package: `createBus()`, `createPort()`, `observePort()` |
+| `test-8` | `typed-bus` package: `createBus()`, `createPort()` |
 | `test-9` | Consumer app importing `typed-bus` via `pnpm link` |
 
 ## Usage
