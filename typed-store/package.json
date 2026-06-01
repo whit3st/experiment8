@@ -13,13 +13,17 @@
   },
   "files": [
     "dist",
-    "index.ts"
+    "index.ts",
+    "browser.ts"
   ],
   "scripts": {
-    "build": "tsgo -p tsconfig.json",
+    "build": "pnpm run build:module && pnpm run build:browser",
+    "build:module": "tsgo -p tsconfig.json",
+    "build:browser": "esbuild browser.ts --bundle --platform=browser --format=iife --global-name=TypedStore --outfile=dist/browser.js",
     "test": "vitest run"
   },
   "devDependencies": {
+    "esbuild": "^0.25.9",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"

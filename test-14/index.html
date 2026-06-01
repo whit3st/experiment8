@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>test-14 - head script web components</title>
+  <script src="../typed-bus/dist/browser.js"></script>
+  <script src="../typed-store/dist/browser.js"></script>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #19324d, #0f1722 58%);
+      color: #eef5fb;
+      font-family: system-ui, sans-serif;
+    }
+
+    main {
+      width: min(34rem, calc(100vw - 2rem));
+      padding: 2rem;
+      border-radius: 18px;
+      background: rgba(13, 19, 30, 0.92);
+      border: 1px solid rgba(147, 197, 253, 0.16);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.6rem;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+      color: #b7c9dc;
+    }
+
+    .layout {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+  </style>
+  <script>
+    const bus = TypedBus.createBus();
+    const port = TypedBus.createPort();
+    const store = TypedStore.createStore(counterReducer, {
+      count: 0,
+      lastAction: 'none'
+    });
+
+    const INCREMENT_CLICKED = port('counter:increment-clicked');
+    const RESET_CLICKED = port('counter:reset-clicked');
+
+    bus.on(INCREMENT_CLICKED, function () {
+      store.dispatch({ type: 'counter/increment' });
+    });
+
+    bus.on(RESET_CLICKED, function () {
+      store.dispatch({ type: 'counter/reset' });
+    });
+
+    function counterReducer(state, action) {
+      switch (action.type) {
+        case 'counter/increment':
+          return {
+            count: state.count + 1,
+            lastAction: 'increment'
+          };
+        case 'counter/reset':
+          return {
+            count: 0,
+            lastAction: 'reset'
+          };
+        default:
+          return state;
+      }
+    }
+
+    class CounterReadout extends HTMLElement {
+      connectedCallback() {
+        if (!this.shadowRoot) {
+          const root = this.attachShadow({ mode: 'open' });
+          root.innerHTML = `
+            <style>
+              section {
+                padding: 1rem 1.1rem;
+                border-radius: 14px;
+                background: rgba(8, 13, 22, 0.42);
+                border: 1px solid rgba(147, 197, 253, 0.12);
+              }
+
+              .count {
+                font-size: 3.25rem;
+                font-weight: 700;
+                letter-spacing: -0.04em;
+              }
+
+              .meta {
+                color: #93a9c2;
+                font-size: 0.95rem;
+              }
+            </style>
+            <section>
+              <div class="count"></div>
+              <div class="meta"></div>
+            </section>
+          `;
+          this.countNode = root.querySelector('.count');
+          this.metaNode = root.querySelector('.meta');
+        }
+
+        this.unsubscribe = store.subscribe((state) => {
+          this.update(state);
+        });
+        this.update(store.getState());
+      }
+
+      disconnectedCallback() {
+        if (this.unsubscribe) {
+          this.unsubscribe();
+          this.unsubscribe = null;
+        }
+      }
+
+      update(state) {
+        this.countNode.textContent = String(state.count);
+        this.metaNode.textContent = `Last action: ${state.lastAction}`;
+      }
+    }
+
+    class CounterControls extends HTMLElement {
+      connectedCallback() {
+        if (!this.shadowRoot) {
+          const root = this.attachShadow({ mode: 'open' });
+          root.innerHTML = `
+            <style>
+              section {
+                padding: 1rem 1.1rem;
+                border-radius: 14px;
+                background: rgba(8, 13, 22, 0.42);
+                border: 1px solid rgba(147, 197, 253, 0.12);
+              }
+
+              .actions {
+                display: flex;
+                gap: 0.75rem;
+              }
+
+              button {
+                border: 0;
+                border-radius: 999px;
+                padding: 0.85rem 1.1rem;
+                font: inherit;
+                cursor: pointer;
+              }
+
+              .primary {
+                background: #93c5fd;
+                color: #07101c;
+              }
+
+              .secondary {
+                background: #223146;
+                color: #eef5fb;
+              }
+            </style>
+            <section>
+              <div class="actions">
+                <button class="primary" data-increment>Increment</button>
+                <button class="secondary" data-reset>Reset</button>
+              </div>
+            </section>
+          `;
+          this.incrementButton = root.querySelector('[data-increment]');
+          this.resetButton = root.querySelector('[data-reset]');
+        }
+
+        this.incrementButton.addEventListener('click', this.handleIncrement);
+        this.resetButton.addEventListener('click', this.handleReset);
+      }
+
+      disconnectedCallback() {
+        this.incrementButton?.removeEventListener('click', this.handleIncrement);
+        this.resetButton?.removeEventListener('click', this.handleReset);
+      }
+
+      handleIncrement = () => {
+        bus.dispatch(INCREMENT_CLICKED, undefined);
+      };
+
+      handleReset = () => {
+        bus.dispatch(RESET_CLICKED, undefined);
+      };
+
+    }
+
+    class CounterInspector extends HTMLElement {
+      connectedCallback() {
+        if (!this.shadowRoot) {
+          const root = this.attachShadow({ mode: 'open' });
+          root.innerHTML = `
+            <style>
+              section {
+                padding: 1rem 1.1rem;
+                border-radius: 14px;
+                background: rgba(8, 13, 22, 0.42);
+                border: 1px solid rgba(147, 197, 253, 0.12);
+              }
+
+              .title {
+                font-weight: 600;
+                margin-bottom: 0.45rem;
+              }
+
+              pre {
+                margin: 0;
+                color: #93a9c2;
+                white-space: pre-wrap;
+              }
+            </style>
+            <section>
+              <div class="title">Store snapshot</div>
+              <pre></pre>
+            </section>
+          `;
+          this.preNode = root.querySelector('pre');
+        }
+
+        this.unsubscribe = store.subscribe((state) => {
+          this.update(state);
+        });
+        this.update(store.getState());
+      }
+
+      disconnectedCallback() {
+        if (this.unsubscribe) {
+          this.unsubscribe();
+          this.unsubscribe = null;
+        }
+      }
+
+      update(state) {
+        this.preNode.textContent = JSON.stringify(state, null, 2);
+      }
+    }
+
+    customElements.define('counter-readout', CounterReadout);
+    customElements.define('counter-controls', CounterControls);
+    customElements.define('counter-inspector', CounterInspector);
+  </script>
+</head>
+<body>
+  <main>
+    <h1>typed-bus + typed-store in head scripts</h1>
+    <p>
+      No Vite, no modules, no Lit. Just browser globals, custom elements,
+      and a single HTML file.
+    </p>
+    <div class="layout">
+      <counter-readout></counter-readout>
+      <counter-controls></counter-controls>
+      <counter-inspector></counter-inspector>
+    </div>
+  </main>
+</body>
+</html>
