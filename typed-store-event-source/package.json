@@ -1,0 +1,35 @@
+{
+  "name": "typed-store-event-source",
+  "version": "0.1.0",
+  "description": "Minimal typed event-sourced store for browser apps",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "index.ts"
+  ],
+  "scripts": {
+    "build": "tsgo -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "keywords": [
+    "event-sourcing",
+    "store",
+    "typescript",
+    "frontend",
+    "browser"
+  ],
+  "license": "MIT"
+}
