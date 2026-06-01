@@ -1,0 +1,35 @@
+{
+  "name": "typed-store",
+  "version": "0.1.0",
+  "description": "Minimal typed reducer store for app state",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "index.ts"
+  ],
+  "scripts": {
+    "build": "tsgo -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "keywords": [
+    "state",
+    "store",
+    "reducer",
+    "typescript",
+    "frontend"
+  ],
+  "license": "MIT"
+}
